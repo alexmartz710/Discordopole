@@ -403,7 +403,7 @@ async def statboard_grunt_active(config, area):
     if config['db_scan_schema'] == "mad":
         await cursor_statboard_grunt_active.execute(f"select count(pokestop_id) from pokestop where incident_expiration > UTC_TIMESTAMP() AND incident_grunt_type NOT IN (41,42,43,44) and ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(latitude, longitude))")
     elif config['db_scan_schema'] == "rdm":
-        await cursor_statboard_grunt_active.execute(f"select count(id) from pokestop where grunt_type not in (41,42,43,44) and ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(lat, lon))")
+        await cursor_statboard_grunt_active.execute(f"select count(pokestop_id) from pokestop LEFT JOIN incident ON pokestop.id = incident.pokestop_id where incident.character not in (41,42,43,44) AND expiration > UNIX_TIMESTAMP() AND enabled = 1 and ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(lat, lon))")
     statboard_grunt_active = await cursor_statboard_grunt_active.fetchall()
 
     await cursor_statboard_grunt_active.close()
@@ -414,7 +414,7 @@ async def statboard_leader_active(config, area):
     if config['db_scan_schema'] == "mad":
         await cursor_statboard_leader_active.execute(f"select count(pokestop_id) from pokestop where incident_expiration > UTC_TIMESTAMP() AND incident_grunt_type >= 41 AND incident_grunt_type <= 44 and ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(latitude, longitude))")
     elif config['db_scan_schema'] == "rdm":
-        await cursor_statboard_leader_active.execute(f"select count(id) from pokestop where grunt_type in (41,42,43,44) and ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(lat, lon))")
+        await cursor_statboard_leader_active.execute(f"select count(pokestop_id) from pokestop LEFT JOIN incident ON pokestop.id = incident.pokestop_id where incident.character in (41,42,43,44) and expiration > UNIX_TIMESTAMP() and enabled = 1 and ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(lat, lon))")
     statboard_leader_active = await cursor_statboard_leader_active.fetchall()
 
     await cursor_statboard_leader_active.close()
