@@ -392,7 +392,7 @@ async def statboard_lure_active(config, area):
     if config['db_scan_schema'] == "mad":
         await cursor_statboard_lure_active.execute(f"select count(pokestop_id), ifnull(sum(active_fort_modifier = 501), 0), ifnull(sum(active_fort_modifier = 502), 0), ifnull(sum(active_fort_modifier = 503), 0), ifnull(sum(active_fort_modifier = 504), 0), ifnull(sum(active_fort_modifier = 505), 0) from pokestop where lure_expiration > UTC_TIMESTAMP() and ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(latitude, longitude))")
     elif config['db_scan_schema'] == "rdm":
-        await cursor_statboard_lure_active.execute(f"select count(id), ifnull(sum(lure_id = 501), 0), ifnull(sum(lure_id = 502), 0), ifnull(sum(lure_id = 503), 0), ifnull(sum(lure_id = 504), 0), ifnull(sum(lure_id = 505), 0) from pokestop where lure_expire_timestamp is not NULL and ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(lat, lon))")
+        await cursor_statboard_lure_active.execute(f"select count(id), ifnull(sum(lure_id = 501), 0), ifnull(sum(lure_id = 502), 0), ifnull(sum(lure_id = 503), 0), ifnull(sum(lure_id = 504), 0), ifnull(sum(lure_id = 505), 0) from pokestop where lure_expire_timestamp is not NULL and lure_expire_timestamp >= UNIX_TIMESTAMP() and ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(lat, lon))")
     statboard_lure_active = await cursor_statboard_lure_active.fetchall()
 
     await cursor_statboard_lure_active.close()
