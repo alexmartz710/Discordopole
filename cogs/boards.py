@@ -267,8 +267,8 @@ class Boards(commands.Cog):
                     raid_active = await queries.statboard_raid_active(self.bot.config, area[0])
                     if "raid_active" in board['type'] and not "egg_active" in board['type']:
                         text = f"{text}{self.bot.custom_emotes['raid']} **{raid_active[0][0]:,}** {self.bot.locale['active_raids']}\n"
-                    if "raid_lvl_8_active" in board['type'] and not "egg_lvl_9_active" in board['type']:
-                        text = f"{text}9⭐ **{raid_active[0][8]:,}** {self.bot.locale['raids']}\n"
+                    if "raid_lvl_9_active" in board['type'] and not "egg_lvl_9_active" in board['type']:
+                        text = f"{text}9⭐ **{raid_active[0][9]:,}** {self.bot.locale['raids']}\n"
                     if "raid_lvl_8_active" in board['type'] and not "egg_lvl_8_active" in board['type']:
                         text = f"{text}8⭐ **{raid_active[0][8]:,}** {self.bot.locale['raids']}\n"
                     if "raid_lvl_7_active" in board['type'] and not "egg_lvl_7_active" in board['type']:
