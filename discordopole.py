@@ -37,7 +37,7 @@ if not os.path.exists("data/raid_cache.json"):
 ### LANG FILES
 
 dts_lang = bot.config['language']
-if not bot.config['language'] in ["en", "de", "fr", "es", "pl"]:
+if not bot.config['language'] in ["en", "de", "fr", "es", "pl", "pt_br"]:
     dts_lang = "en"
 
 with open(f"data/dts/{dts_lang}.json", encoding="utf-8") as f:
