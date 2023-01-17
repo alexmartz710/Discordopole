@@ -16,6 +16,7 @@ class Boards(commands.Cog):
         self.short = pyshorteners.Shortener().tinyurl.short
         self.board_loop.start()
         self.quest_loop.start()
+        self.kecleon_loop.start()
 
     @tasks.loop(seconds=2.0)   
     async def board_loop(self):
@@ -263,7 +264,7 @@ class Boards(commands.Cog):
                     gym_teams = await queries.statboard_gym_teams(self.bot.config, area[0])
                     text = f"{text}{self.bot.custom_emotes['gym_blue']}**{gym_teams[0][1]}**{self.bot.custom_emotes['blank']}{self.bot.custom_emotes['gym_red']}**{gym_teams[0][2]}**{self.bot.custom_emotes['blank']}{self.bot.custom_emotes['gym_yellow']}**{gym_teams[0][3]}**{self.bot.custom_emotes['blank']}{self.bot.custom_emotes['gym_white']}**{gym_teams[0][0]}**\n\n"
 
-                if ("raid_active" or "raid_lvl_1_active" or "raid_lvl_2_active" or "raid_lvl_3_active" or "raid_lvl_4_active" or "raid_lvl_5_active" or "raid_lvl_6_active" or "raid_lvl_7_active" or "raid_lvl_8_active") or "raid_lvl_9_active") in board['type']:
+                if ("raid_active" or "raid_lvl_1_active" or "raid_lvl_2_active" or "raid_lvl_3_active" or "raid_lvl_4_active" or "raid_lvl_5_active" or "raid_lvl_6_active" or "raid_lvl_7_active" or "raid_lvl_8_active" or "raid_lvl_9_active") in board['type']:
                     raid_active = await queries.statboard_raid_active(self.bot.config, area[0])
                     if "raid_active" in board['type'] and not "egg_active" in board['type']:
                         text = f"{text}{self.bot.custom_emotes['raid']} **{raid_active[0][0]:,}** {self.bot.locale['active_raids']}\n"
@@ -286,7 +287,7 @@ class Boards(commands.Cog):
                     if "raid_lvl_1_active" in board['type'] and not "egg_lvl_1_active" in board['type']:
                         text = f"{text}1⭐ **{raid_active[0][1]:,}** {self.bot.locale['raids']}\n"
 
-                if ("egg_active" or "egg_lvl_1_active" or "egg_lvl_2_active" or "egg_lvl_3_active" or "egg_lvl_4_active" or "egg_lvl_5_active" or "egg_lvl_6_active" or "egg_lvl_7_active" or "egg_lvl_8_active") or "egg_lvl_9_active")in board['type']:
+                if ("egg_active" or "egg_lvl_1_active" or "egg_lvl_2_active" or "egg_lvl_3_active" or "egg_lvl_4_active" or "egg_lvl_5_active" or "egg_lvl_6_active" or "egg_lvl_7_active" or "egg_lvl_8_active" or "egg_lvl_9_active")in board['type']:
                     egg_active = await queries.statboard_egg_active(self.bot.config, area[0])
                     if "raid_active" in board['type']:
                         text = f"{text}{self.bot.custom_emotes['raid']} **{raid_active[0][0]:,}** {self.bot.locale['active_raids']} | **{egg_active[0][0]:,}** {self.bot.locale['eggs']}\n"
@@ -458,12 +459,80 @@ class Boards(commands.Cog):
                 print("Error while updating Quest Board. Skipping it.")
                 await asyncio.sleep(5)
 
+    @tasks.loop(seconds=120.0)   
+    async def kecleon_loop(self):
+        for board in self.bot.boards['kecleon']:
+            try:
+                channel = await self.bot.fetch_channel(board["channel_id"])
+                message = await channel.fetch_message(board["message_id"])
+                area = get_area(board["area"])
+                text = ""
+                kecleons = await queries.get_active_kecleon(self.bot.config, area[0])
+
+                length = 0
+                reward_mons = list()
+                reward_items = list()
+                lat_list = list()
+                lon_list = list()
+
+                for lat, lon, stop_name, stop_id, expiration in kecleons:
+                    end = datetime.fromtimestamp(expiration).strftime(self.bot.locale['time_format_hm'])
+                    found_rewards = True
+                    mon_id = 352
+                    reward_mons.append([mon_id, lat, lon])
+
+                    if found_rewards:
+                        if stop_name is None:
+                            stop_name = self.bot.locale["unknown_stop_name"]  
+                        else:
+                            if len(stop_name) >= 30:
+                                stop_name = stop_name[0:27] + "..."
+                            lat_list.append(lat)
+                            lon_list.append(lon)
+
+                        if self.bot.config['use_map']:
+                            map_url = self.bot.map_url.quest(lat, lon, stop_id)
+                        else:
+                            map_url = f"https://www.google.com/maps/search/?api=1&query={lat},{lon}"
+                        map_url = self.short(map_url)
+
+                        entry = f"{self.bot.custom_emotes['pokestop']}[{stop_name}]({map_url}) **{end}**\n"
+                        if length + len(entry) >= 2048:
+                            break
+                        else:
+                            text = text + entry
+                            length = length + len(entry)
+
+                static_map_img = ""
+                if length > 0:
+                    if self.bot.config['use_static']:
+                        static_map_img = await self.bot.static_map.quest(lat_list, lon_list, reward_items, reward_mons, self.bot.custom_emotes)
+                else:
+                    text = self.bot.locale["empty_board"]  
+
+                embed = discord.Embed(title=board['title'], description=text, timestamp=datetime.utcnow())
+                embed.set_footer(text=area[1])
+                embed.set_image(url=static_map_img)
+                embed.set_thumbnail(url=f"{self.bot.config['mon_icon_repo']}pokemon_icon_{str(mon_id).zfill(3)}_00.png")
+
+                await message.edit(embed=embed)
+                print("Updated Kecleon board")
+                await asyncio.sleep(2)
+            except Exception as err:              
+                print(err)
+                print("Error while updating Kecleon Board. Skipping it.")
+                await asyncio.sleep(5)
+
     @board_loop.before_loop
     async def before_boards(self):
         await self.bot.wait_until_ready()
 
     @quest_loop.before_loop
     async def before_quests(self):
+        await self.bot.wait_until_ready()
+
+    @kecleon_loop.before_loop
+    async def before_kecleon(self):
         await self.bot.wait_until_ready()
 
 def setup(bot):
