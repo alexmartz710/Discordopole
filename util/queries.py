@@ -151,6 +151,17 @@ async def get_active_quests(config, area):
     await cursor_active_quests.close()
     return quests
 
+async def get_active_kecleon(config, area):
+    cursor_active_kecleon = await connect_db(config)
+    if config['db_scan_schema'] == "mad":
+        await cursor_active_kecleon.execute(f"select quest_reward, quest_task, latitude, longitude, name, pokestop_id from trs_quest left join pokestop on trs_quest.GUID = pokestop.pokestop_id WHERE quest_timestamp > UNIX_TIMESTAMP(CURDATE()) AND ST_CONTAINS(ST_GEOMFROMTEXT('POLYGON(({area}))'), point(latitude, longitude)) ORDER BY quest_item_id ASC, quest_pokemon_id ASC, name;")
+    elif config['db_scan_schema'] == "rdm":
+        await cursor_active_kecleon.execute(f"SELECT pokestop.lat, pokestop.lon, pokestop.name, pokestop.id, incident.expiration FROM pokestop, incident WHERE pokestop.id = incident.pokestop_id AND incident.display_type =8 AND incident.expiration >= UNIX_TIMESTAMP()+300 AND ST_Contains(ST_GeomFromText('POLYGON(({area}))'), POINT(lat,lon)) ORDER BY expiration ASC, name;")
+    kecleons = await cursor_active_kecleon.fetchall()
+
+    await cursor_active_kecleon.close()
+    return kecleons
+
 async def get_gym_stats(config, area):
     cursor_gym_stats = await connect_db(config)
     if config['db_scan_schema'] == "mad":
